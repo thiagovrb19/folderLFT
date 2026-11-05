@@ -1,0 +1,138 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #FFFFFF;
+  --bg-subtle: #F8FAFC;
+  --primary: #0072D5;
+  --accent: #0A182F;
+  --secondary: #F1F5F9;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #FFFFFF;
+  color: #0A182F;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-touch-callout: none;
+  font-family: var(--font-inter), Inter, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+  width: 100vw;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sora), Sora, sans-serif;
+  letter-spacing: -0.02em;
+  color: #0A182F;
+}
+
+/* Metal Shift Gradient for Light Theme */
+.text-metal-shift {
+  background: linear-gradient(110deg, #0A182F 0%, #0072D5 40%, #0284C7 70%, #0A182F 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: metalShift 6s ease infinite;
+}
+
+.bg-metal-shift {
+  background: linear-gradient(110deg, #0072D5 0%, #005bb5 40%, #0284C7 70%, #0072D5 100%);
+  background-size: 200% 200%;
+  animation: metalShift 6s ease infinite;
+}
+
+@keyframes metalShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Glassmorphism Light Luxury Panels */
+.glass-panel {
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 10px 30px -5px rgba(0, 72, 213, 0.07);
+}
+
+.glass-panel-subtle {
+  background-color: rgba(248, 250, 252, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.7);
+}
+
+.glass-panel-glow {
+  background-color: #FFFFFF;
+  border: 1px solid rgba(0, 114, 213, 0.3);
+  box-shadow: 0 10px 35px -5px rgba(0, 114, 213, 0.15);
+}
+
+/* Custom Scrollbar for Light Theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.6);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 114, 213, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 114, 213, 0.5);
+}
+
+
+/* ---------- Performance & polish ---------- */
+button, a, [role="button"] {
+  touch-action: manipulation;
+  transition-property: color, background-color, border-color, box-shadow, transform, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+button:active:not(:disabled), a:active { transform: scale(0.97); }
+
+/* Respeita safe-area do iPad */
+main { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+
+/* Brilho que varre o card no hover (mouse/trackpad) */
+.card-shine { position: relative; isolation: isolate; }
+.card-shine::after {
+  content: "";
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
+  transform: translateX(-120%);
+  will-change: transform;
+}
+@media (hover: hover) {
+  .card-shine:hover::after { transform: translateX(120%); transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1); }
+}
+
+@keyframes softGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,114,213,0); }
+  50% { box-shadow: 0 0 22px 2px rgba(0,114,213,0.25); }
+}
+.glow-pulse { animation: softGlow 3.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
