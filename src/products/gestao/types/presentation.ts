@@ -57,14 +57,15 @@ export interface ClientProfile {
   clientAge?: number | string;
   clientDependentsSummary?: string;
 
-  // 3. Finanças
-  monthlyExpenses: number | string;
+  // 3. Finanças (campos abertos: aceitam número ou texto livre)
+  monthlyIncome?: number | string; // Renda mensal
+  monthlyExpenses: number | string; // Despesas
   expensePercentage?: number | string; // % das Despesas
-  futureEducationExpenses: number | string;
-  pensionPrivate: number | string;
-  inss: number | string;
-  proLabore: number | string;
-  cardsAndBanks: string;
+  futureEducationExpenses: number | string; // Educação / gastos com os filhos
+  pensionPrivate: number | string; // Previdência
+  inss: number | string; // INSS / Pró-labore (campo totalmente aberto)
+  proLabore: number | string; // legado (mantido para dados antigos)
+  cardsAndBanks: string; // Bandeira do cartão
   emergencyFundMonths?: number | string;
 
   // 4. Seguros Ativos
