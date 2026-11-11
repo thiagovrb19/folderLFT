@@ -84,7 +84,8 @@ export const Slide14Fechamento: React.FC = () => {
   const handleGenerateFinalReport = async () => {
     setIsGenerating(true);
     try {
-      await downloadExecutiveDossierPDF(client);
+      const ok = await downloadExecutiveDossierPDF(client);
+      if (!ok) throw new Error("falha na geração do documento");
 
       confetti({
         particleCount: 80,

@@ -65,6 +65,7 @@ const initialClient: ClientProfile = {
   clientAge: "",
   clientDependentsSummary: "",
 
+  monthlyIncome: "",
   monthlyExpenses: "",
   expensePercentage: "",
   futureEducationExpenses: "",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { usePresentationStore } from "@/products/gestao/lib/store";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { MetalButton } from "@/components/ui/MetalButton";
@@ -11,7 +11,6 @@ import {
   User,
   Users,
   Wallet,
-  ShieldCheck,
   HeartPulse,
   Share2,
   Trash2,
@@ -29,7 +28,7 @@ import {
   Instagram,
 } from "lucide-react";
 
-type StepId = "comercial" | "familiar" | "financas" | "seguros" | "saude" | "indicacoes";
+type StepId = "comercial" | "familiar" | "financas" | "saude" | "indicacoes";
 
 const CRM_URL =
   "https://app.umbrellacrm.com.br/captacao/lft-administradora-e-corretora-de-seguros-de-vida-ltda";
@@ -40,30 +39,27 @@ export const Slide14Fechamento: React.FC = () => {
     updateClient,
     addDependent,
     removeDependent,
-    addActiveInsurance,
-    removeActiveInsurance,
     addRecommendation,
     removeRecommendation,
   } = usePresentationStore();
 
-  // Mode: "choose" (initial 2-option decision) or "system" (6-step internal form)
+  // Mode: "choose" (initial 2-option decision) or "system" (5-step internal form)
   const [fillMode, setFillMode] = useState<"choose" | "system">("choose");
   const [activeTab, setActiveTab] = useState<StepId>("comercial");
 
   const [newDep, setNewDep] = useState({ name: "", age: "", relationship: "" });
-  const [newIns, setNewIns] = useState({ insurer: "", insuredCapital: "", monthlyContribution: "" });
   const [newRec, setNewRec] = useState({ name: "", children: "", age: "", profession: "", phone: "" });
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const isGeneratingRef = useRef(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const steps: { id: StepId; number: number; label: string; icon: React.ComponentType<{ className?: string }>; count?: number }[] = [
     { id: "comercial", number: 1, label: "Dados Comerciais", icon: User },
     { id: "familiar", number: 2, label: "Família", icon: Users, count: client.dependents?.length },
     { id: "financas", number: 3, label: "Finanças", icon: Wallet },
-    { id: "seguros", number: 4, label: "Seguros", icon: ShieldCheck, count: client.activeInsurances?.length },
-    { id: "saude", number: 5, label: "Saúde & Histórico", icon: HeartPulse },
-    { id: "indicacoes", number: 6, label: "Indicações", icon: Share2, count: client.recommendations?.length },
+    { id: "saude", number: 4, label: "Saúde & Histórico", icon: HeartPulse },
+    { id: "indicacoes", number: 5, label: "Indicações", icon: Share2, count: client.recommendations?.length },
   ];
 
   const currentStepIndex = steps.findIndex((s) => s.id === activeTab);
@@ -95,17 +91,6 @@ export const Slide14Fechamento: React.FC = () => {
     setNewDep({ name: "", age: "", relationship: "" });
   };
 
-  const handleAddInsurance = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newIns.insurer.trim()) return;
-    addActiveInsurance({
-      insurer: newIns.insurer.trim(),
-      insuredCapital: newIns.insuredCapital || 0,
-      monthlyContribution: newIns.monthlyContribution || 0,
-    });
-    setNewIns({ insurer: "", insuredCapital: "", monthlyContribution: "" });
-  };
-
   const handleAddRecommendation = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newRec.name.trim()) return;
@@ -120,9 +105,13 @@ export const Slide14Fechamento: React.FC = () => {
   };
 
   const handleGenerateFinalReport = async () => {
+    // Evita exportações simultâneas (duplo clique) que geravam arquivos duplicados
+    if (isGeneratingRef.current) return;
+    isGeneratingRef.current = true;
     setIsGenerating(true);
     try {
-      await downloadExecutiveDossierPDF(client);
+      const ok = await downloadExecutiveDossierPDF(client);
+      if (!ok) throw new Error("falha na geração do documento");
 
       confetti({
         particleCount: 90,
@@ -135,6 +124,7 @@ export const Slide14Fechamento: React.FC = () => {
     } catch (err) {
       alert("Erro ao exportar o PDF: " + String(err));
     } finally {
+      isGeneratingRef.current = false;
       setIsGenerating(false);
     }
   };
@@ -212,7 +202,7 @@ export const Slide14Fechamento: React.FC = () => {
   }
 
   // =========================================================================
-  // VIEW 2: System Form (6-Step Guided Flow + PDF Generator)
+  // VIEW 2: System Form (5-Step Guided Flow + PDF Generator)
   // =========================================================================
   return (
     <div className="w-full h-full flex flex-col justify-between p-3 sm:p-5 pt-3 sm:pt-4 pb-20 overflow-y-auto max-w-6xl mx-auto space-y-3">
@@ -257,7 +247,7 @@ export const Slide14Fechamento: React.FC = () => {
             </button>
             <span className="text-slate-300">•</span>
             <span className="text-xs font-bold text-primary uppercase tracking-wider">
-              Etapa {currentStepIndex + 1} de 6
+              Etapa {currentStepIndex + 1} de {steps.length}
             </span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold font-sora text-accent">
@@ -528,173 +518,104 @@ export const Slide14Fechamento: React.FC = () => {
           </div>
         )}
 
-        {/* ETAPA 3: FINANÇAS & COMPROMISSOS */}
+        {/* ETAPA 3: FINANÇAS */}
         {activeTab === "financas" && (
           <div className="space-y-4">
             <div className="pb-2 border-b border-slate-200">
               <h3 className="text-sm font-bold text-accent font-sora flex items-center gap-1.5">
                 <Wallet className="w-4 h-4 text-primary" />
-                3. Diagnóstico Financeiro & Compromissos
+                3. Finanças
               </h3>
               <p className="text-xs text-slate-500">
-                Mapeamento das despesas da família, renda e reservas para o cálculo de blindagem.
+                Todos os campos são abertos: digite valores, texto ou os dois.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Despesas Mensais da Família (R$)</label>
+                <label htmlFor="fin-monthlyIncome" className="block text-xs font-semibold text-slate-700 mb-1">Renda mensal</label>
                 <input
-                  type="number"
-                  placeholder="Ex: 25000"
-                  value={client.monthlyExpenses || ""}
-                  onChange={(e) => updateClient({ monthlyExpenses: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent font-mono placeholder-slate-400 focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Pró-labore / Renda Declarada (R$)</label>
-                <input
-                  type="number"
-                  placeholder="Ex: 35000"
-                  value={client.proLabore || ""}
-                  onChange={(e) => updateClient({ proLabore: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent font-mono placeholder-slate-400 focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Educação dos Filhos / Fundo Futuro (R$)</label>
-                <input
-                  type="number"
-                  placeholder="Ex: 500000"
-                  value={client.futureEducationExpenses || ""}
-                  onChange={(e) => updateClient({ futureEducationExpenses: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent font-mono placeholder-slate-400 focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Previdência Privada Acumulada (R$)</label>
-                <input
-                  type="number"
-                  placeholder="Ex: 200000"
-                  value={client.pensionPrivate || ""}
-                  onChange={(e) => updateClient({ pensionPrivate: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent font-mono placeholder-slate-400 focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Teto INSS ou Pública (R$)</label>
-                <input
-                  type="number"
-                  placeholder="Ex: 7507"
-                  value={client.inss || ""}
-                  onChange={(e) => updateClient({ inss: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent font-mono placeholder-slate-400 focus:border-primary"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Bancos, Cartões & Instituições</label>
-                <input
+                  id="fin-monthlyIncome"
                   type="text"
-                  placeholder="Ex: Itaú Personnalité, BTG, XP"
-                  value={client.cardsAndBanks || ""}
+                  inputMode="decimal"
+                  placeholder="Ex: 35000"
+                  value={client.monthlyIncome ?? ""}
+                  onChange={(e) => updateClient({ monthlyIncome: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-accent font-mono placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fin-monthlyExpenses" className="block text-xs font-semibold text-slate-700 mb-1">Despesas</label>
+                <input
+                  id="fin-monthlyExpenses"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="Ex: 25000"
+                  value={client.monthlyExpenses ?? ""}
+                  onChange={(e) => updateClient({ monthlyExpenses: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-accent font-mono placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fin-inss" className="block text-xs font-semibold text-slate-700 mb-1">INSS / Pró-labore</label>
+                <input
+                  id="fin-inss"
+                  type="text"
+                  placeholder="Livre: valor, texto ou os dois. Ex: Teto INSS R$ 7.507 + pró-labore R$ 12.000"
+                  value={client.inss ?? ""}
+                  onChange={(e) => updateClient({ inss: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-accent  placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fin-futureEducationExpenses" className="block text-xs font-semibold text-slate-700 mb-1">Educação dos filhos</label>
+                <input
+                  id="fin-futureEducationExpenses"
+                  type="text"
+                  placeholder="Ex: Escola R$ 4.500/mês + faculdade"
+                  value={client.futureEducationExpenses ?? ""}
+                  onChange={(e) => updateClient({ futureEducationExpenses: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-accent  placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fin-pensionPrivate" className="block text-xs font-semibold text-slate-700 mb-1">Previdência</label>
+                <input
+                  id="fin-pensionPrivate"
+                  type="text"
+                  placeholder="Ex: PGBL R$ 200.000 acumulados, aporte de R$ 1.500/mês"
+                  value={client.pensionPrivate ?? ""}
+                  onChange={(e) => updateClient({ pensionPrivate: e.target.value })}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-accent  placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="fin-cardsAndBanks" className="block text-xs font-semibold text-slate-700 mb-1">Bandeira do cartão</label>
+                <input
+                  id="fin-cardsAndBanks"
+                  type="text"
+                  placeholder="Ex: Visa Infinite, Mastercard Black, Amex"
+                  value={client.cardsAndBanks ?? ""}
                   onChange={(e) => updateClient({ cardsAndBanks: e.target.value })}
-                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent placeholder-slate-400 focus:border-primary"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2.5 text-sm text-accent  placeholder-slate-400 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-shadow"
                 />
               </div>
             </div>
           </div>
         )}
 
-        {/* ETAPA 4: SEGUROS & APÓLICES ATIVAS */}
-        {activeTab === "seguros" && (
-          <div className="space-y-4">
-            <div className="pb-2 border-b border-slate-200">
-              <h3 className="text-sm font-bold text-accent font-sora flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-primary" />
-                4. Coberturas e Apólices Ativas
-              </h3>
-              <p className="text-xs text-slate-500">
-                Registre apólices já existentes para avaliar sobreposição ou gap de cobertura.
-              </p>
-            </div>
-
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {(!client.activeInsurances || client.activeInsurances.length === 0) && (
-                <div className="text-center py-6 border border-dashed border-slate-200 rounded-2xl text-xs text-slate-400">
-                  Nenhuma apólice cadastrada. Se o cliente já possui cobertura, adicione abaixo.
-                </div>
-              )}
-
-              {client.activeInsurances?.map((ins) => (
-                <div key={ins.id} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs shadow-xs">
-                  <div>
-                    <span className="font-semibold text-accent block">{ins.insurer}</span>
-                    <span className="text-[11px] text-slate-500">Seguro de Vida Individual</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-emerald-600 font-mono font-bold">
-                      R$ {Number(ins.insuredCapital || 0).toLocaleString("pt-BR")}
-                    </span>
-                    <span className="text-slate-600 font-mono text-[11px]">
-                      R$ {Number(ins.monthlyContribution || 0).toLocaleString("pt-BR")}/mês
-                    </span>
-                    <button
-                      onClick={() => removeActiveInsurance(ins.id)}
-                      className="text-slate-400 hover:text-red-500 p-1 transition-colors"
-                      title="Remover"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleAddInsurance} className="flex flex-wrap gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200">
-              <input
-                type="text"
-                placeholder="Nome da Seguradora (ex: Prudential, MAG...)"
-                value={newIns.insurer}
-                onChange={(e) => setNewIns({ ...newIns, insurer: e.target.value })}
-                className="flex-1 min-w-[160px] bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent placeholder-slate-400"
-              />
-              <input
-                type="number"
-                placeholder="Capital Segurado (R$)"
-                value={newIns.insuredCapital}
-                onChange={(e) => setNewIns({ ...newIns, insuredCapital: e.target.value })}
-                className="w-36 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent font-mono placeholder-slate-400"
-              />
-              <input
-                type="number"
-                placeholder="Contribuição Mensal (R$)"
-                value={newIns.monthlyContribution}
-                onChange={(e) => setNewIns({ ...newIns, monthlyContribution: e.target.value })}
-                className="w-36 bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-accent font-mono placeholder-slate-400"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
-              >
-                + Adicionar
-              </button>
-            </form>
-          </div>
-        )}
-
-        {/* ETAPA 5: SAÚDE & HISTÓRICO FAMILIAR */}
+        {/* ETAPA 4: SAÚDE & HISTÓRICO FAMILIAR */}
         {activeTab === "saude" && (
           <div className="space-y-4">
             <div className="pb-2 border-b border-slate-200">
               <h3 className="text-sm font-bold text-accent font-sora flex items-center gap-1.5">
                 <HeartPulse className="w-4 h-4 text-primary" />
-                5. Perfil de Saúde, Subscrição & Histórico Familiar
+                4. Perfil de Saúde, Subscrição & Histórico Familiar
               </h3>
               <p className="text-xs text-slate-500">
                 Informações essenciais para a cotação médica precisa e sem ressalvas nas seguradoras.
@@ -854,13 +775,13 @@ export const Slide14Fechamento: React.FC = () => {
           </div>
         )}
 
-        {/* ETAPA 6: INDICAÇÕES / CÍRCULO DE CONFIANÇA */}
+        {/* ETAPA 5: INDICAÇÕES / CÍRCULO DE CONFIANÇA */}
         {activeTab === "indicacoes" && (
           <div className="space-y-4">
             <div className="pb-2 border-b border-slate-200">
               <h3 className="text-sm font-bold text-accent font-sora flex items-center gap-1.5">
                 <Share2 className="w-4 h-4 text-primary" />
-                6. Círculo de Confiança & Indicações
+                5. Círculo de Confiança & Indicações
               </h3>
               <p className="text-xs text-slate-500">
                 Pessoas de confiança recomendadas para também receberem o planejamento patrimonial LFT.
